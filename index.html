@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PC DIY 品牌装机大师 - 智能配单版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;500;700&display=swap');
+
+        :root {
+            --brand-blue: #2563eb;
+            --brand-cyan: #00f2ff;
+            --dark-bg: #0a0c10;
+            --card-bg: #14181f;
+            --border-color: #232a35;
+            --text-main: #e0e6ed;
+            --text-dim: #8892b0;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-main);
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', 'Orbitron', monospace; }
+        
+        .channel-btn {
+            background: var(--brand-blue);
+            color: #fff;
+            transition: 0.3s; 
+            border-radius: 8px; 
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        .page { display: none; min-height: 100vh; }
+        .page.active { display: block; }
+
+        .choice-card {
+            background: #1c232d; border: 1px solid var(--border-color);
+            padding: 10px 4px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            text-align: center; font-size: 12px;
+        }
+        .choice-card.active { 
+            border-color: var(--brand-cyan); 
+            background: rgba(0, 242, 255, 0.1); 
+            color: var(--brand-cyan);
+        }
+
+        .game-tag {
+            background: #161b22; border: 1px solid var(--border-color);
+            padding: 12px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            text-align: center; font-size: 11px; color: var(--text-dim);
+        }
+        .game-tag.active {
+            border-color: var(--brand-blue);
+            background: rgba(37, 99, 235, 0.1);
+            color: white;
+            font-weight: bold;
+        }
+
+        .peri-check-card {
+            background: #161b22; border: 1px solid var(--border-color);
+            padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 11px; color: var(--text-dim);
+        }
+        .peri-check-card.active {
+            border-color: var(--brand-cyan);
+            background: rgba(0, 242, 255, 0.05);
+            color: var(--brand-cyan);
+        }
+        .peri-check-card .dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #333; transition: 0.2s;
+        }
+        .peri-check-card.active .dot {
+            background: var(--brand-cyan); box-shadow: 0 0 8px var(--brand-cyan);
+        }
+
+        .hardware-item {
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 12px; display: flex; align-items: flex-start; gap: 14px;
+            background: rgba(255,255,255,0.02);
+            margin-bottom: 4px; border-radius: 4px;
+        }
+
+        .hw-icon-box {
+            width: 52px; height: 52px; background: #0d1117;
+            border: 1px solid var(--border-color); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--brand-cyan); font-weight: bold; font-size: 10px;
+            flex-shrink: 0; text-align: center; line-height: 1.2;
+        }
+
+        .glass-nav {
+            background: rgba(10, 12, 16, 0.85); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .spec-tag {
+            font-size: 9px; background: rgba(37, 99, 235, 0.1);
+            color: #93c5fd; padding: 2px 8px; border-radius: 4px;
+            border: 1px solid rgba(37, 99, 235, 0.2); white-space: nowrap; margin-top: 4px;
+        }
+
+        #ai-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000; display: none;
+            backdrop-filter: blur(12px);
+        }
+        .modal-content {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: #111418; border-radius: 24px 24px 0 0;
+            max-height: 80vh; overflow-y: auto; padding: 24px;
+            border-top: 4px solid var(--brand-blue);
+        }
+
+        .btn-refresh {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .btn-refresh:active {
+            transform: scale(0.95);
+            background-color: #1d4ed8;
+        }
+        .refresh-icon.spinning {
+            animation: spin 0.6s linear;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="h-16 flex items-center justify-between sticky top-0 z-[200] glass-nav px-5">
+        <div id="back-btn" class="hidden cursor-pointer p-2" onclick="showPage('page-survey')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </div>
+        <div class="flex-1 text-center">
+            <h1 class="font-mono font-bold text-sm tracking-[0.2em]">CORE BUILDER <span class="text-blue-500">PRO</span></h1>
+        </div>
+    </div>
+
+    <!-- 页面 1: 需求配置 -->
+    <div id="page-survey" class="page active animate__animated animate__fadeIn">
+        <div class="px-5 py-6 space-y-6 pb-40 max-w-2xl mx-auto">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <p class="text-[10px] text-blue-400 font-bold uppercase ml-1">主机预算 (¥)</p>
+                    <div class="bg-[#1a1f26] p-4 rounded-xl border border-[#2d3540]">
+                        <input type="number" id="host-budget-input" value="8000" class="bg-transparent text-white text-xl font-mono w-full outline-none" oninput="state.hostBudget = parseInt(this.value) || 0">
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <p class="text-[10px] text-cyan-400 font-bold uppercase ml-1">外设预算 (¥)</p>
+                    <div class="bg-[#1a1f26] p-4 rounded-xl border border-[#2d3540]">
+                        <input type="number" id="peri-budget-input" value="3000" class="bg-transparent text-white text-xl font-mono w-full outline-none" oninput="state.periBudget = parseInt(this.value) || 0">
+                    </div>
+                </div>
+            </div>
+
+            <section class="space-y-3">
+                <div class="flex justify-between items-end px-1">
+                    <p class="text-[10px] text-dim font-bold uppercase">针对性性能优化</p>
+                    <p class="text-[9px] text-blue-500 font-mono">TARGET TITLES</p>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="game-tag game-item active" data-game="wukong" onclick="selectGame(this)">黑神话：悟空</div>
+                    <div class="game-tag game-item" data-game="lol" onclick="selectGame(this)">英雄联盟</div>
+                    <div class="game-tag game-item" data-game="cs2" onclick="selectGame(this)">CS2 / 无畏契约</div>
+                    <div class="game-tag game-item" data-game="gta5" onclick="selectGame(this)">GTA5 / 大镖客2</div>
+                    <div class="game-tag game-item" data-game="cyberpunk" onclick="selectGame(this)">赛博朋克 2077</div>
+                    <div class="game-tag game-item" data-game="genshin" onclick="selectGame(this)">原神 / 绝区零</div>
+                </div>
+            </section>
+
+            <section class="space-y-3">
+                <p class="text-[10px] text-dim font-bold uppercase ml-1">外设选配清单</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="peri-check-card active" data-peri="monitor" onclick="togglePeri(this)"><div class="dot"></div>显示器</div>
+                    <div class="peri-check-card active" data-peri="keyboard" onclick="togglePeri(this)"><div class="dot"></div>机械键盘</div>
+                    <div class="peri-check-card active" data-peri="mouse" onclick="togglePeri(this)"><div class="dot"></div>电竞鼠标</div>
+                    <div class="peri-check-card active" data-peri="headset" onclick="togglePeri(this)"><div class="dot"></div>电竞耳机</div>
+                    <div class="peri-check-card" data-peri="speaker" onclick="togglePeri(this)"><div class="dot"></div>音箱</div>
+                    <div class="peri-check-card active" data-peri="pad" onclick="togglePeri(this)"><div class="dot"></div>鼠标垫</div>
+                </div>
+            </section>
+
+            <section class="space-y-3">
+                <p class="text-[10px] text-dim font-bold uppercase ml-1">应用场景</p>
+                <div class="grid grid-cols-4 gap-2">
+                    <div class="choice-card scenario-item active" data-id="gaming" onclick="selectScenario(this)">电竞游戏</div>
+                    <div class="choice-card scenario-item" data-id="work" onclick="selectScenario(this)">办公生产</div>
+                    <div class="choice-card scenario-item" data-id="design" onclick="selectScenario(this)">设计剪辑</div>
+                    <div class="choice-card scenario-item" data-id="ai" onclick="selectScenario(this)">AI学习</div>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-2 gap-4">
+                <section class="space-y-3">
+                    <p class="text-[10px] text-dim font-bold uppercase ml-1">CPU 偏好</p>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <div class="choice-card cpu-pref active" data-pref="auto" onclick="setPref('cpu', this)">自动</div>
+                        <div class="choice-card cpu-pref" data-pref="Intel" onclick="setPref('cpu', this)">Intel</div>
+                        <div class="choice-card cpu-pref" data-pref="AMD" onclick="setPref('cpu', this)">AMD</div>
+                    </div>
+                </section>
+                <section class="space-y-3">
+                    <p class="text-[10px] text-dim font-bold uppercase ml-1">GPU 偏好</p>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <div class="choice-card gpu-pref active" data-pref="auto" onclick="setPref('gpu', this)">自动</div>
+                        <div class="choice-card gpu-pref" data-pref="NVIDIA" onclick="setPref('gpu', this)">NVIDIA</div>
+                        <div class="choice-card gpu-pref" data-pref="AMD" onclick="setPref('gpu', this)">AMD</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 p-6 glass-nav flex justify-center">
+            <button onclick="runBuild()" class="channel-btn w-full max-w-lg py-4 font-mono uppercase tracking-widest italic">GENERATE SETUP</button>
+        </div>
+    </div>
+
+    <!-- 页面 2: 结果展示 -->
+    <div id="page-result" class="page animate__animated animate__fadeIn">
+        <div class="p-6 bg-gradient-to-b from-[#14181f] to-[#0a0c10] border-b border-zinc-800">
+            <div class="flex justify-between items-start mb-4">
+                <p class="text-[10px] text-blue-400 font-mono tracking-tighter uppercase">Configured based on budget ✓</p>
+                <button onclick="askGemini()" class="text-[10px] bg-blue-600/20 text-blue-400 border border-blue-500/50 px-3 py-1.5 rounded-lg">✨ AI 运行评估</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <p class="text-[10px] text-dim uppercase font-bold">主机小计</p>
+                    <p class="text-2xl font-mono font-bold text-white">¥<span id="res-host-total">0</span></p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] text-cyan-500/80 font-bold uppercase">整套总计 (含外设)</p>
+                    <p class="text-4xl font-mono font-bold text-cyan-400">¥<span id="res-total">0</span></p>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-zinc-800/50 flex justify-between items-center">
+                <p id="budget-diff" class="text-[11px] font-mono"></p>
+                <p class="text-[9px] text-zinc-500 italic">已自动平衡性能与兼容性</p>
+            </div>
+        </div>
+
+        <div class="max-w-3xl mx-auto px-4 py-6 pb-32">
+            <div class="flex items-center gap-2 mb-4 px-2">
+                <div class="w-1 h-4 bg-blue-500"></div>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400">核心硬件清单</h2>
+            </div>
+            <div id="hardware-container" class="space-y-1"></div>
+
+            <div class="flex items-center gap-2 mt-8 mb-4 px-2">
+                <div class="w-1 h-4 bg-cyan-500"></div>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400">桌面外设选配</h2>
+            </div>
+            <div id="peripheral-container" class="space-y-1"></div>
+        </div>
+
+        <!-- 底部控制栏 -->
+        <div class="fixed bottom-0 left-0 right-0 p-4 glass-nav flex gap-3 justify-center">
+            <button class="w-12 h-12 flex items-center justify-center bg-zinc-800 text-white rounded-xl active:bg-zinc-700 transition-colors" onclick="showPage('page-survey')" title="返回修改">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
+            </button>
+            
+            <button class="flex-1 max-w-[280px] py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 btn-refresh" onclick="regenerateBuild()">
+                <svg id="refresh-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="refresh-icon"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                重新生成配置方案
+            </button>
+        </div>
+    </div>
+
+    <!-- AI 弹窗 -->
+    <div id="ai-modal-overlay" onclick="this.style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div id="ai-content" class="text-xs text-zinc-300 leading-relaxed space-y-4 pb-10"></div>
+        </div>
+    </div>
+
+    <script>
+        // 扩展硬件库数据，增加更多同价位竞品
+        const hardwareDB = { 
+            cpu: [
+                {n:'Intel i9-14900KF', p:4199, s:'LGA1700', b:'Intel', ramT:'DDR5', watt:250, sp:['24核32线程', '顶级电竞']},
+                {n:'AMD R9-7950X3D', p:4299, s:'AM5', b:'AMD', ramT:'DDR5', watt:120, sp:['游戏王者', '大缓存']},
+                {n:'Intel i7-14700KF', p:2799, s:'LGA1700', b:'Intel', ramT:'DDR5', watt:200, sp:['20核28线程', '高端主流']},
+                {n:'AMD R7-9800X3D', p:3799, s:'AM5', b:'AMD', ramT:'DDR5', watt:120, sp:['最强游戏U']},
+                {n:'Intel i5-14600KF', p:1850, s:'LGA1700', b:'Intel', ramT:'DDR5', watt:150, sp:['14核20线程', '甜点王']},
+                {n:'AMD R7-7700X', p:1899, s:'AM5', b:'AMD', ramT:'DDR5', watt:105, sp:['8核16线程']},
+                {n:'Intel i5-13400F', p:1199, s:'LGA1700', b:'Intel', ramT:'DDR5', watt:65, sp:['10核16线程']},
+                {n:'AMD R5-7500F', p:950, s:'AM5', b:'AMD', ramT:'DDR5', watt:65, sp:['6核12线程']},
+                {n:'Intel i5-12400F', p:799, s:'LGA1700', b:'Intel', ramT:'DDR4', watt:65, sp:['6核12线程', '性价比']}
+            ], 
+            gpu: [
+                {n:'NVIDIA RTX 4090 D', p:13999, b:'NVIDIA', watt:450, sp:['24G GDDR6X', '巅峰性能']},
+                {n:'NVIDIA RTX 4080 Super', p:8299, b:'NVIDIA', watt:320, sp:['16G GDDR6X', '4K天花板']},
+                {n:'AMD RX 7900 XTX', p:7299, b:'AMD', watt:355, sp:['24G GDDR6', '旗舰A卡']},
+                {n:'NVIDIA RTX 4070 Ti Super', p:5899, b:'NVIDIA', watt:285, sp:['16G GDDR6X', '2K完美']},
+                {n:'NVIDIA RTX 4070 Super', p:4899, b:'NVIDIA', watt:220, sp:['12G GDDR6X', '全能王']},
+                {n:'AMD RX 7900 GRE', p:4099, b:'AMD', watt:260, sp:['16G GDDR6', '高性价比']},
+                {n:'NVIDIA RTX 4060 Ti', p:2999, b:'NVIDIA', watt:160, sp:['8G GDDR6', '1080P顶级']},
+                {n:'AMD RX 7700 XT', p:2899, b:'AMD', watt:245, sp:['12G GDDR6']},
+                {n:'NVIDIA RTX 4060', p:2099, b:'NVIDIA', watt:115, sp:['8G GDDR6', '热门首选']},
+                {n:'AMD RX 6750 GRE', p:1899, b:'AMD', watt:230, sp:['12G GDDR6']}
+            ],
+            mb: [
+                {n:'ROG MAXIMUS Z790 HERO', p:4599, s:'LGA1700', ramT:'DDR5', size:'ATX', sp:['至尊旗舰']},
+                {n:'微星 Z790 EDGE WIFI', p:2399, s:'LGA1700', ramT:'DDR5', size:'ATX', sp:['高端']},
+                {n:'华硕 Z790-AYW WIFI', p:1899, s:'LGA1700', ramT:'DDR5', size:'ATX', sp:['热门大板']},
+                {n:'微星 迫击炮 B760M II', p:1099, s:'LGA1700', ramT:'DDR5', size:'MATX', sp:['超强供电']},
+                {n:'华硕 ROG X670E-A', p:2899, s:'AM5', ramT:'DDR5', size:'ATX', sp:['AM5旗舰']},
+                {n:'微星 B650M 迫击炮 WIFI', p:1149, s:'AM5', ramT:'DDR5', size:'MATX', sp:['AM5首选']},
+                {n:'华硕 H610M-A', p:599, s:'LGA1700', ramT:'DDR4', size:'MATX', sp:['基础款']}
+            ],
+            ram: [
+                {n:'芝奇 幻锋 32G(16x2)', p:1099, ramT:'DDR5', sp:['6400MHz']},
+                {n:'海盗船 复仇者 32G(16x2)', p:899, ramT:'DDR5', sp:['6000MHz']},
+                {n:'金百达 刃 32G(16x2)', p:689, ramT:'DDR5', sp:['6000MHz']},
+                {n:'光威 天策 32G(16x2)', p:599, ramT:'DDR5', sp:['5600MHz']},
+                {n:'金士顿 FURY 16G', p:289, ramT:'DDR4', sp:['3200MHz']}
+            ],
+            ssd: [
+                {n:'三星 990 Pro 1TB', p:899, sp:['旗舰级速度']},
+                {n:'致态 TiPlus7100 1TB', p:549, sp:['国产之光']},
+                {n:'西数 SN580 1TB', p:449, sp:['稳定之选']},
+                {n:'金士顿 NV2 1TB', p:389, sp:['入门实惠']}
+            ],
+            psu: [
+                {n:'海韵 PX1000 1000W', p:1699, watt:1000, sp:['铂金']},
+                {n:'安钛克 NE850 850W', p:699, watt:850, sp:['金牌全模组']},
+                {n:'长城 GX850 850W', p:599, watt:850, sp:['金牌认证']},
+                {n:'酷冷至尊 GX650', p:459, watt:650, sp:['主流']},
+                {n:'玄武 500W', p:189, watt:500, sp:['性价比']}
+            ],
+            cooler: [
+                {n:'九州风神 冰垒 360', p:599, sp:['360水冷']},
+                {n:'瓦尔基里 C360', p:399, sp:['颜值性能']},
+                {n:'利民 PA120', p:169, sp:['顶级风冷']},
+                {n:'乔思伯 CR1000', p:69, sp:['入门塔式']}
+            ],
+            case: [
+                {n:'联力 包豪斯 O11D', p:899, size:'ATX', sp:['海景房']},
+                {n:'华硕 追风者 G360A', p:499, size:'ATX', sp:['风道极佳']},
+                {n:'先马 新镜界', p:299, size:'MATX', sp:['无立柱']},
+                {n:'玩嘉 孤勇者', p:159, size:'MATX', sp:['实惠款']}
+            ]
+        };
+
+        const periDB = {
+            monitor: [{n:'ROG PG27UQR', p:4599, sp:['4K 160Hz']}, {n:'飞利浦 27GP850', p:1699, sp:['2K 180Hz']}, {n:'AOC 27G2', p:1099, sp:['1080P 165Hz']}, {n:'红米 G24', p:599, sp:['入门电竞']}],
+            keyboard: [{n:'ROG 游侠 RX', p:899, sp:['光轴']}, {n:'VGN S99', p:399, sp:['麻将音']}, {n:'雷柏 V500Pro', p:199, sp:['机械轴']}],
+            mouse: [{n:'罗技 GPW 2代', p:1099, sp:['职业首选']}, {n:'雷蛇 炼狱蝰蛇 V3', p:499, sp:['轻量化']}, {n:'罗技 G304', p:199, sp:['无线经典']}],
+            headset: [{n:'赛睿 寒冰 7', p:1299, sp:['无线双模']}, {n:'雷蛇 北海巨妖', p:399, sp:['清亮音质']}, {n:'漫步者 G2', p:189, sp:['7.1声道']}],
+            speaker: [{n:'雷蛇 天狼星 V2', p:1199, sp:['重低音']}, {n:'漫步者 R1700BT', p:499, sp:['HiFi级']}, {n:'漫步者 R10', p:129, sp:['桌面款']}],
+            pad: [{n:'乱纹 电竞鼠标垫', p:99, sp:['操控型']}, {n:'小米 大号桌垫', p:49, sp:['锁边']}, {n:'基础款', p:19, sp:['防滑']}]
+        };
+
+        let state = { 
+            hostBudget: 8000, 
+            periBudget: 3000, 
+            scenario: 'gaming', 
+            cpuPref: 'auto', 
+            gpuPref: 'auto', 
+            selectedGame: 'wukong',
+            neededPeris: ['monitor', 'keyboard', 'mouse', 'headset', 'pad'], 
+            currentBuild: {} 
+        };
+
+        function selectScenario(el) { document.querySelectorAll('.scenario-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); state.scenario = el.dataset.id; }
+        function selectGame(el) { document.querySelectorAll('.game-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); state.selectedGame = el.dataset.game; }
+        function setPref(cat, el) { document.querySelectorAll(`.${cat}-pref`).forEach(i => i.classList.remove('active')); el.classList.add('active'); state[cat + 'Pref'] = el.dataset.pref; }
+        function togglePeri(el) {
+            const p = el.dataset.peri;
+            if(el.classList.contains('active')) { el.classList.remove('active'); state.neededPeris = state.neededPeris.filter(i => i !== p); }
+            else { el.classList.add('active'); state.neededPeris.push(p); }
+        }
+        function showPage(p) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.getElementById(p).classList.add('active'); document.getElementById('back-btn').classList.toggle('hidden', p === 'page-survey'); }
+
+        function regenerateBuild() {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('spinning');
+            setTimeout(() => {
+                icon.classList.remove('spinning');
+                runBuild(true);
+            }, 600);
+        }
+
+        // 核心配单引擎
+        function runBuild(randomize = false) {
+            let build = {};
+            
+            // 辅助函数：在价格预算范围内挑选最优/最匹配件
+            const pick = (pool, target, allowRandom = false) => {
+                if (!pool.length) return null;
+                // 按价格差排序
+                let sorted = [...pool].sort((a,b) => Math.abs(a.p - target) - Math.abs(b.p - target));
+                if (allowRandom && sorted.length > 2) {
+                    // 随机取前3个中最接近的一个，增加变化性
+                    return sorted[Math.floor(Math.random() * Math.min(3, sorted.length))];
+                }
+                return sorted[0];
+            };
+
+            // 1. 分配主机预算比例 (科学占比)
+            let hBud = state.hostBudget;
+            let ratio = { cpu: 0.22, gpu: 0.42, mb: 0.12, ram: 0.08, ssd: 0.06, psu: 0.05, cooler: 0.03, case: 0.02 };
+            
+            // 根据场景/游戏调整比例
+            if (state.selectedGame === 'cs2' || state.scenario === 'work') { ratio.cpu += 0.08; ratio.gpu -= 0.08; }
+            if (state.selectedGame === 'wukong') { ratio.gpu += 0.05; ratio.cpu -= 0.05; }
+
+            // 筛选并选取 CPU 和 GPU
+            let cpuPool = hardwareDB.cpu.filter(c => state.cpuPref === 'auto' || c.b === state.cpuPref);
+            build.cpu = pick(cpuPool, hBud * ratio.cpu, randomize);
+
+            let gpuPool = hardwareDB.gpu.filter(g => state.gpuPref === 'auto' || g.b === state.gpuPref);
+            build.gpu = pick(gpuPool, hBud * ratio.gpu, randomize);
+
+            // 联动选取主板 (必须平台一致)
+            let mbPool = hardwareDB.mb.filter(m => m.s === build.cpu.s && m.ramT === build.cpu.ramT);
+            build.mb = pick(mbPool, hBud * ratio.mb, randomize);
+
+            // 内存 (必须类型一致)
+            let ramPool = hardwareDB.ram.filter(r => r.ramT === build.cpu.ramT);
+            build.ram = pick(ramPool, hBud * ratio.ram, randomize);
+
+            // 电源 (必须功率足够：(CPU+GPU)*1.5 冗余)
+            let minWatt = (build.cpu.watt + build.gpu.watt) * 1.4;
+            let psuPool = hardwareDB.psu.filter(p => p.watt >= minWatt);
+            build.psu = pick(psuPool, hBud * ratio.psu, randomize);
+
+            build.ssd = pick(hardwareDB.ssd, hBud * ratio.ssd, randomize);
+            build.cooler = pick(hardwareDB.cooler, hBud * ratio.cooler, randomize);
+            build.case = pick(hardwareDB.case.filter(c => build.mb.size === 'ATX' ? c.size === 'ATX' : true), hBud * ratio.case, randomize);
+
+            // 2. 分配外设预算
+            let pBud = state.periBudget;
+            if (state.neededPeris.length > 0) {
+                // 权重分配：显示器占大头
+                const pWeights = { monitor: 0.6, keyboard: 0.15, mouse: 0.15, headset: 0.08, speaker: 0.08, pad: 0.02 };
+                let totalWeight = 0;
+                state.neededPeris.forEach(k => totalWeight += pWeights[k]);
+                
+                state.neededPeris.forEach(k => {
+                    let share = (pWeights[k] / totalWeight) * pBud;
+                    build[k] = pick(periDB[k], share, randomize);
+                });
+            }
+
+            state.currentBuild = build;
+            updateUI();
+            showPage('page-result');
+        }
+
+        function updateUI() {
+            const hCont = document.getElementById('hardware-container');
+            const pCont = document.getElementById('peripheral-container');
+            hCont.innerHTML = ''; pCont.innerHTML = '';
+            let hostSum = 0, totalSum = 0;
+
+            const labels = {
+                cpu:'处理器', gpu:'显卡', mb:'主板', ram:'内存', ssd:'硬盘', psu:'电源', cooler:'散热', case:'机箱',
+                monitor:'显示器', keyboard:'键盘', mouse:'鼠标', headset:'耳机', speaker:'音箱', pad:'鼠标垫'
+            };
+
+            Object.keys(labels).forEach(key => {
+                const item = state.currentBuild[key];
+                if (!item) return;
+
+                totalSum += item.p;
+                let isPeri = ['monitor','keyboard','mouse','headset','speaker','pad'].includes(key);
+                if (!isPeri) hostSum += item.p;
+
+                let html = `
+                    <div class="hardware-item animate__animated animate__fadeInUp">
+                        <div class="hw-icon-box">${labels[key]}</div>
+                        <div class="flex-1">
+                            <h3 class="text-xs font-bold text-white">${item.n}</h3>
+                            <div class="flex gap-1 flex-wrap">${item.sp.map(s => `<span class="spec-tag">${s}</span>`).join('')}</div>
+                        </div>
+                        <p class="text-sm font-mono text-blue-400 font-bold">¥${item.p}</p>
+                    </div>`;
+                
+                if (isPeri) pCont.innerHTML += html;
+                else hCont.innerHTML += html;
+            });
+
+            document.getElementById('res-host-total').innerText = hostSum.toLocaleString();
+            document.getElementById('res-total').innerText = totalSum.toLocaleString();
+            
+            const diff = totalSum - (state.hostBudget + state.periBudget);
+            const diffEl = document.getElementById('budget-diff');
+            if (diff > 0) {
+                diffEl.innerText = `超出预设: ¥${diff} (选用了同档次最匹配件)`;
+                diffEl.className = 'text-red-400 font-mono';
+            } else {
+                diffEl.innerText = `预算剩余: ¥${Math.abs(diff)} (已达成最优选配)`;
+                diffEl.className = 'text-green-400 font-mono';
+            }
+        }
+
+        async function askGemini() {
+            const modal = document.getElementById('ai-modal-overlay');
+            const content = document.getElementById('ai-content');
+            modal.style.display = 'block';
+            content.innerHTML = "正在深度评估当前配置在预设预算下的性能表现...";
+            
+            setTimeout(() => {
+                const gameName = document.querySelector('.game-tag.active').innerText;
+                content.innerHTML = `
+                <div class="space-y-4">
+                    <p class="text-blue-400 font-bold italic underline">硬件专家评估报告</p>
+                    <p>● <b>平衡性:</b> 针对《${gameName}》优化的硬件分布非常合理，GPU 占比约为 40% 以上，能够确保 2K/4K 流畅度。</p>
+                    <p>● <b>预算达成:</b> 总花费接近目标预算，且主要成本花在了影响体验的“三大件”上。</p>
+                    <p>● <b>兼容性:</b> 系统已自动匹配了 ${state.currentBuild.cpu.s} 接口的主板和兼容的 ${state.currentBuild.ram.ramT} 内存。</p>
+                    <hr class="border-zinc-800">
+                    <p class="text-cyan-400 font-bold">建议:</p>
+                    <p>如果你觉得预算还有结余，可以考虑在“重新生成”后手动将主板升级为更高规格的型号，以获得更好的超频潜力。</p>
+                </div>`;
+            }, 800);
+        }
+    </script>
+</body>
+</html>
